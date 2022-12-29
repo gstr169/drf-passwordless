@@ -83,6 +83,7 @@ class AbstractBaseAliasAuthenticationSerializer(serializers.Serializer):
 
 
 class EmailAuthSerializer(AbstractBaseAliasAuthenticationSerializer):
+    email = serializers.EmailField()
     @property
     def alias_type(self):
         return 'email'
@@ -91,7 +92,6 @@ class EmailAuthSerializer(AbstractBaseAliasAuthenticationSerializer):
     def alias_field_name(self):
         return api_settings.PASSWORDLESS_USER_EMAIL_FIELD_NAME
 
-    email = serializers.EmailField()
 
 
 class MobileAuthSerializer(AbstractBaseAliasAuthenticationSerializer):

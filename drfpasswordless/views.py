@@ -1,6 +1,6 @@
 import logging
 from django.utils.module_loading import import_string
-from rest_framework import status
+from rest_framework import parsers, renderers, status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
@@ -46,7 +46,6 @@ class AbstractBaseObtainCallbackToken(APIView):
     def post(self, request, *args, **kwargs):
         if self.alias_type.upper() not in api_settings.PASSWORDLESS_AUTH_TYPES:
             # Only allow auth types allowed in settings.
-            logger.debug('Not allowed auth type in settings.')
             return Response(status=status.HTTP_404_NOT_FOUND)
 
         serializer = self.serializer_class(data=request.data, context={'request': request})

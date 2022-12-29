@@ -80,6 +80,40 @@ class AbstractBaseObtainCallbackToken(APIView):
                             status=status.HTTP_400_BAD_REQUEST)
 
 
+class AbstractChangeCallbackToken(AbstractBaseObtainCallbackToken):
+    def post(self, request, *args, **kwargs):
+        if self.alias_type.upper() not in api_settings.PASSWORDLESS_AUTH_TYPES:
+            # Only allow auth types allowed in settings.
+            logger.debug('Not allowed auth type in settings.')
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = self.serializer_class(data=request.data,
+                                           context={'request': request})
+        if serializer.is_valid(raise_exception=True):
+            # Validate -
+            user = serializer.validated_data['user']
+            # Create and send callback token
+            success = TokenService.send_token(
+                user,
+                self.alias_type,
+                self.token_type,
+                serializer.validated_data['mobile'],
+                **self.message_payload,
+            )
+
+            # Respond With Success Or Failure of Sent
+            if success:
+                status_code = status.HTTP_200_OK
+                response_detail = self.success_response
+            else:
+                status_code = status.HTTP_400_BAD_REQUEST
+                response_detail = self.failure_response
+            return Response({'detail': response_detail}, status=status_code)
+        else:
+            return Response(serializer.error_messages,
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
 """
 Login Obtain Callback tokens
 """
@@ -185,7 +219,7 @@ Change Obtain Callback tokens
 """
 
 
-class ObtainEmailChangeCallbackToken(AbstractBaseObtainCallbackToken):
+class ObtainEmailChangeCallbackToken(AbstractChangeCallbackToken):
     """
     Send token to user by e-mail for changing.
 
@@ -211,7 +245,7 @@ class ObtainEmailChangeCallbackToken(AbstractBaseObtainCallbackToken):
     }
 
 
-class ObtainMobileChangeCallbackToken(AbstractBaseObtainCallbackToken):
+class ObtainMobileChangeCallbackToken(AbstractChangeCallbackToken):
     """
     Send token to user by SMS for changing.
 

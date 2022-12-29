@@ -227,7 +227,7 @@ def send_email_with_callback_token(user, email_token, **kwargs):
         return False
 
 
-def send_sms_with_callback_token(user, mobile_token, **kwargs):
+def send_sms_with_callback_token(user, to_number, mobile_token, **kwargs):
     """
     Sends an SMS to user.mobile via Twilio.
 
@@ -254,7 +254,6 @@ def send_sms_with_callback_token(user, mobile_token, **kwargs):
                 os.environ['TWILIO_AUTH_TOKEN']
             )
 
-            to_number = getattr(user, api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME)
             if to_number.__class__.__name__ == 'PhoneNumber':
                 to_number = to_number.__str__()
 
@@ -286,7 +285,7 @@ def send_sms_with_callback_token(user, mobile_token, **kwargs):
             f"Possibly no mobile number on user object "
             f"or the twilio package isn't set up yet. "
             f"Number entered was: "
-            f"{getattr(user, api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME)}"
+            f"{to_number}"
         )
         logger.debug(e)
         return False

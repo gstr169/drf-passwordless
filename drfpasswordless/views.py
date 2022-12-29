@@ -9,14 +9,23 @@ from drfpasswordless.settings import api_settings
 from drfpasswordless.serializers import (
     EmailAuthSerializer,
     MobileAuthSerializer,
-    CallbackTokenAuthSerializer,
-    CallbackTokenVerificationSerializer,
     EmailVerificationSerializer,
     MobileVerificationSerializer,
+    EmailChangeSerializer,
+    MobileChangeSerializer,
+    CallbackTokenAuthSerializer,
+    CallbackTokenVerificationSerializer,
+    CallbackTokenChangeSerializer,
 )
 from drfpasswordless.services import TokenService
 
 logger = logging.getLogger(__name__)
+
+# TODO: separate views to different files.
+
+"""
+Abstract Obtain Callback tokens
+"""
 
 
 class AbstractBaseObtainCallbackToken(APIView):
@@ -46,14 +55,17 @@ class AbstractBaseObtainCallbackToken(APIView):
     def post(self, request, *args, **kwargs):
         if self.alias_type.upper() not in api_settings.PASSWORDLESS_AUTH_TYPES:
             # Only allow auth types allowed in settings.
+            logger.debug('Not allowed auth type in settings.')
             return Response(status=status.HTTP_404_NOT_FOUND)
 
-        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer = self.serializer_class(data=request.data,
+                                           context={'request': request})
         if serializer.is_valid(raise_exception=True):
             # Validate -
             user = serializer.validated_data['user']
             # Create and send callback token
-            success = TokenService.send_token(user, self.alias_type, self.token_type, **self.message_payload)
+            success = TokenService.send_token(user, self.alias_type, self.token_type,
+                                              **self.message_payload)
 
             # Respond With Success Or Failure of Sent
             if success:
@@ -64,7 +76,13 @@ class AbstractBaseObtainCallbackToken(APIView):
                 response_detail = self.failure_response
             return Response({'detail': response_detail}, status=status_code)
         else:
-            return Response(serializer.error_messages, status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.error_messages,
+                            status=status.HTTP_400_BAD_REQUEST)
+
+
+"""
+Login Obtain Callback tokens
+"""
 
 
 class ObtainEmailCallbackToken(AbstractBaseObtainCallbackToken):
@@ -105,6 +123,11 @@ class ObtainMobileCallbackToken(AbstractBaseObtainCallbackToken):
 
     mobile_message = api_settings.PASSWORDLESS_MOBILE_MESSAGE
     message_payload = {'mobile_message': mobile_message}
+
+
+"""
+Verification Obtain Callback tokens
+"""
 
 
 class ObtainEmailVerificationCallbackToken(AbstractBaseObtainCallbackToken):
@@ -148,6 +171,12 @@ class ObtainMobileVerificationCallbackToken(AbstractBaseObtainCallbackToken):
     mobile_message = api_settings.PASSWORDLESS_MOBILE_VERIFICATION_MESSAGE
     message_payload = {'mobile_message': mobile_message}
 
+
+"""
+Change Obtain Callback tokens
+"""
+
+
 class ObtainEmailChangeCallbackToken(AbstractBaseObtainCallbackToken):
     """
     Send token to user by e-mail for changing.
@@ -155,7 +184,7 @@ class ObtainEmailChangeCallbackToken(AbstractBaseObtainCallbackToken):
     This returns a 6-digit callback token we can trade for a user's Auth Token.
     """
     permission_classes = (IsAuthenticated,)
-    serializer_class = EmailChangingSerializer
+    serializer_class = EmailChangeSerializer
     success_response = "A verification token has been sent to your email."
     failure_response = "Unable to email you a verification code. Try again later."
 
@@ -179,7 +208,7 @@ class ObtainMobileChangeCallbackToken(AbstractBaseObtainCallbackToken):
     This returns a 6-digit callback token we can trade for a user's Auth Token.
     """
     permission_classes = (IsAuthenticated,)
-    serializer_class = MobileChangingSerializer
+    serializer_class = MobileChangeSerializer
     success_response = "We texted you a verification code."
     failure_response = "Unable to send you a verification code. Try again later."
 
@@ -188,6 +217,11 @@ class ObtainMobileChangeCallbackToken(AbstractBaseObtainCallbackToken):
 
     mobile_message = api_settings.PASSWORDLESS_MOBILE_CHANGE_MESSAGE
     message_payload = {'mobile_message': mobile_message}
+
+
+"""
+Obtain Auth tokens
+"""
 
 
 class AbstractBaseObtainAuthToken(APIView):
@@ -205,14 +239,18 @@ class AbstractBaseObtainAuthToken(APIView):
             (token, _) = token_creator(user)
 
             if token:
-                TokenSerializer = import_string(api_settings.PASSWORDLESS_AUTH_TOKEN_SERIALIZER)
+                TokenSerializer = import_string(
+                    api_settings.PASSWORDLESS_AUTH_TOKEN_SERIALIZER)
                 token_serializer = TokenSerializer(data=token.__dict__, partial=True)
                 if token_serializer.is_valid():
                     # Return our key for consumption.
                     return Response(token_serializer.data, status=status.HTTP_200_OK)
         else:
-            logger.error("Couldn't log in unknown user. Errors on serializer: {}".format(serializer.error_messages))
-        return Response({'detail': 'Couldn\'t log you in. Try again later.'}, status=status.HTTP_400_BAD_REQUEST)
+            logger.error(
+                "Couldn't log in unknown user. Errors on serializer: {}".format(
+                    serializer.error_messages))
+        return Response({'detail': 'Couldn\'t log you in. Try again later.'},
+                        status=status.HTTP_400_BAD_REQUEST)
 
 
 class ObtainAuthTokenFromCallbackToken(AbstractBaseObtainAuthToken):
@@ -229,7 +267,7 @@ class ObtainAuthTokenFromCallbackToken(AbstractBaseObtainAuthToken):
 
 class VerifyAliasFromCallbackToken(APIView):
     """
-    Verify token received from user for verification purpose.
+    Verify token received from user and verify alias.
 
     This verifies an alias on correct callback token entry using the same logic as auth.
     Should be refactored at some point.
@@ -237,10 +275,39 @@ class VerifyAliasFromCallbackToken(APIView):
     serializer_class = CallbackTokenVerificationSerializer
 
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data, context={'user_id': self.request.user.id})
+        serializer = self.serializer_class(data=request.data,
+                                           context={'user_id': self.request.user.id})
         if serializer.is_valid(raise_exception=True):
             return Response({'detail': 'Alias verified.'}, status=status.HTTP_200_OK)
         else:
-            logger.error("Couldn't verify unknown user. Errors on serializer: {}".format(serializer.error_messages))
+            logger.error(
+                "Couldn't verify unknown user. Errors on serializer: {}".format(
+                    serializer.error_messages))
 
-        return Response({'detail': 'We couldn\'t verify this alias. Try again later.'}, status.HTTP_400_BAD_REQUEST)
+        return Response({'detail': 'We couldn\'t verify this alias. Try again later.'},
+                        status.HTTP_400_BAD_REQUEST)
+
+
+class ChangeAliasFromCallbackToken(APIView):
+    """
+    Verify token received from user and change alias.
+
+    This verifies an alias on correct callback token entry using the same logic as auth.
+    Should be refactored at some point.
+    """
+    serializer_class = CallbackTokenChangeSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(
+            data=request.data,
+            context={'user_id': self.request.user.id}
+        )
+        if serializer.is_valid(raise_exception=True):
+            return Response({'detail': 'Alias verified.'}, status=status.HTTP_200_OK)
+        else:
+            logger.error(
+                "Couldn't verify unknown user. Errors on serializer: {}".format(
+                    serializer.error_messages))
+
+        return Response({'detail': 'We couldn\'t verify this alias. Try again later.'},
+                        status.HTTP_400_BAD_REQUEST)

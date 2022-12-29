@@ -7,7 +7,11 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from drfpasswordless.models import CallbackToken
 from drfpasswordless.settings import api_settings
-from drfpasswordless.utils import verify_user_alias, validate_token_age
+from drfpasswordless.utils import (
+    verify_user_alias,
+    change_user_alias,
+    validate_token_age,
+)
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -22,6 +26,11 @@ class TokenField(serializers.CharField):
         'max_length': _('Tokens are {max_length} digits long.'),
         'min_length': _('Tokens are {min_length} digits long.')
     }
+
+
+"""
+Authentication
+"""
 
 
 class AbstractBaseAliasAuthenticationSerializer(serializers.Serializer):
@@ -92,7 +101,6 @@ class EmailAuthSerializer(AbstractBaseAliasAuthenticationSerializer):
     @property
     def alias_field_name(self):
         return api_settings.PASSWORDLESS_USER_EMAIL_FIELD_NAME
-
 
 
 class MobileAuthSerializer(AbstractBaseAliasAuthenticationSerializer):
@@ -174,6 +182,85 @@ class EmailVerificationSerializer(AbstractBaseAliasVerificationSerializer):
 
 
 class MobileVerificationSerializer(AbstractBaseAliasVerificationSerializer):
+    @property
+    def alias_type(self):
+        return 'mobile'
+
+    @property
+    def alias_field_name(self):
+        return api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME
+
+
+"""
+Change
+"""
+
+
+class AbstractBaseAliasChangeSerializer(serializers.Serializer):
+    """
+    Abstract class that returns a callback token based on the field given
+    Returns a token if valid, None or a message if not.
+    """
+
+    @property
+    def alias_type(self):
+        # The alias type, either email or mobile
+        raise NotImplementedError
+
+    @property
+    def alias_field_name(self):
+        raise NotImplementedError
+
+    def validate(self, attrs):
+        msg = _('There was a problem with your request.')
+
+        if self.alias_type:
+            # Get request.user
+            # Get their specified valid endpoint
+            # Validate
+
+            request = self.context["request"]
+            if request and hasattr(request, "user"):
+                user = request.user
+                if user:
+                    if not user.is_active:
+                        # If valid, return attrs,
+                        # so we can create a token in our logic controller
+                        msg = _('User account is disabled.')
+
+                    else:
+                        # Has the appropriate alias type
+                        if hasattr(user, self.alias_field_name):
+                            # Check, isn't alias the same.
+                            alias = attrs.get(self.alias_type)
+                            if getattr(user, self.alias_field_name) == alias:
+                                msg = _(
+                                    f'This user already have this {self.alias_type}.'
+                                )
+                            else:
+                                attrs['user'] = user
+                                return attrs
+                        else:
+                            msg = _(
+                                'This user doesn\'t have an %s.' % self.alias_field_name
+                            )
+            raise serializers.ValidationError(msg)
+        else:
+            msg = _('Missing %s.') % self.alias_type
+            raise serializers.ValidationError(msg)
+
+
+class EmailChangeSerializer(AbstractBaseAliasVerificationSerializer):
+    @property
+    def alias_type(self):
+        return 'email'
+
+    @property
+    def alias_field_name(self):
+        return api_settings.PASSWORDLESS_USER_EMAIL_FIELD_NAME
+
+
+class MobileChangeSerializer(AbstractBaseAliasVerificationSerializer):
     @property
     def alias_type(self):
         return 'mobile'
@@ -354,6 +441,76 @@ class CallbackTokenVerificationSerializer(AbstractBaseCallbackTokenSerializer):
             if token.user == user:
                 # Mark this alias as verified
                 success = verify_user_alias(user, token)
+                if success is False:
+                    logger.debug("drfpasswordless: Error verifying alias.")
+
+                attrs['user'] = user
+                return attrs
+            else:
+                msg = _('This token is invalid. Try again later.')
+                logger.debug(
+                    "drfpasswordless: User token mismatch when verifying alias.")
+
+        except CallbackToken.DoesNotExist:
+            msg = _('We could not verify this alias.')
+            logger.debug("drfpasswordless: Tried to validate alias with bad token.")
+            pass
+        except User.DoesNotExist:
+            msg = _('We could not verify this alias.')
+            logger.debug("drfpasswordless: Tried to validate alias with bad user.")
+            pass
+        except PermissionDenied:
+            msg = _('Insufficient permissions.')
+            logger.debug("drfpasswordless: Permission denied while validating alias.")
+            pass
+
+        raise serializers.ValidationError(msg)
+
+
+class CallbackTokenChangeSerializer(AbstractBaseCallbackTokenSerializer):
+    """
+    Takes a user and a token, verifies the token belongs to the user and
+    validates the alias that the token was sent from.
+    """
+
+    def validate(self, attrs):
+        try:
+            alias_type, alias = self.validate_alias(attrs)
+            user_id = self.context.get('user_id', None)
+            user = User.objects.get(**{'id': user_id})
+            callback_token = attrs.get('token', None)
+
+            if api_settings.PASSWORDLESS_TEST_MODE:
+                if int(callback_token) in api_settings.PASSWORDLESS_TEST_CODE_INCORRECT:
+                    raise serializers.ValidationError('Incorrect token from settings')
+
+                token = CallbackToken(**{
+                    'user': user,
+                    'key': callback_token,
+                    'type': CallbackToken.TOKEN_TYPE_VERIFY,
+                    'is_active': True,
+                    'to_alias': alias,
+                })
+                if api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME == alias_type:
+                    token.to_alias_type = 'MOBILE'
+                elif api_settings.PASSWORDLESS_USER_EMAIL_FIELD_NAME == alias_type:
+                    token.to_alias_type = 'EMAIL'
+                else:
+                    raise serializers.ValidationError()
+            else:
+                token = CallbackToken.objects.get(**{
+                    'user': user,
+                    'key': callback_token,
+                    'type': CallbackToken.TOKEN_TYPE_VERIFY,
+                    'is_active': True,
+                })
+
+            if token.user == user and token.to_alias == alias:
+                # Change users alias and set as verified
+                success = (
+                    change_user_alias(user, token) and
+                    verify_user_alias(user, token)
+                )
                 if success is False:
                     logger.debug("drfpasswordless: Error verifying alias.")
 

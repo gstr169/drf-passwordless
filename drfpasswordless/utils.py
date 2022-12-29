@@ -133,6 +133,28 @@ def verify_user_alias(user, token):
     return True
 
 
+def change_user_alias(user, token):
+    """
+    Change a user's contact point depending on accepted token type.
+    """
+    if token.to_alias_type == 'EMAIL':
+        setattr(
+            user,
+            api_settings.PASSWORDLESS_USER_EMAIL_FIELD_NAME,
+            token.to_alias,
+        )
+    elif token.to_alias_type == 'MOBILE':
+        setattr(
+            user,
+            api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME,
+            token.to_alias,
+        )
+    else:
+        return False
+    user.save()
+    return True
+
+
 def inject_template_context(context):
     """
     Injects additional context into email template.
@@ -144,7 +166,7 @@ def inject_template_context(context):
 
 def send_email_with_callback_token(user, email_token, **kwargs):
     """
-    Sends a Email to user.email.
+    Sends an Email to user.email.
 
     Passes silently without sending in test environment
     """

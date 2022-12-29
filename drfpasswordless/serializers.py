@@ -486,6 +486,11 @@ class CallbackTokenChangeSerializer(AbstractBaseCallbackTokenSerializer):
             user_id = self.context.get('user_id', None)
             user = User.objects.get(**{'id': user_id})
             callback_token = attrs.get('token', None)
+            if alias == getattr(user, alias_type):
+                msg = _(
+                    f'This user already have same {alias_type}.'
+                )
+                raise serializers.ValidationError(msg)
 
             if api_settings.PASSWORDLESS_TEST_MODE:
                 if int(callback_token) in api_settings.PASSWORDLESS_TEST_CODE_INCORRECT:

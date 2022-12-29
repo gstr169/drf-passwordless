@@ -11,13 +11,14 @@ from drfpasswordless.utils import verify_user_alias, validate_token_age
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
+TOKEN_LENGTH = api_settings.PASSWORDLESS_CALLBACK_TOKEN_LENGTH
 
 
 class TokenField(serializers.CharField):
     default_error_messages = {
-        'required': _('Invalid Token'),
-        'invalid': _('Invalid Token'),
-        'blank': _('Invalid Token'),
+        'required': _('Token required'),
+        'invalid': _('Invalid token'),
+        'blank': _('Blank token'),
         'max_length': _('Tokens are {max_length} digits long.'),
         'min_length': _('Tokens are {min_length} digits long.')
     }
@@ -48,7 +49,9 @@ class AbstractBaseAliasAuthenticationSerializer(serializers.Serializer):
             if api_settings.PASSWORDLESS_REGISTER_NEW_USERS is True:
                 # If new aliases should register new users.
                 try:
-                    user = User.objects.get(**{self.alias_field_name+'__iexact': alias})
+                    user = User.objects.get(
+                        **{self.alias_field_name + '__iexact': alias}
+                    )
                 except User.DoesNotExist:
                     user = User.objects.create(**{self.alias_field_name: alias})
                     user.set_unusable_password()
@@ -56,13 +59,16 @@ class AbstractBaseAliasAuthenticationSerializer(serializers.Serializer):
             else:
                 # If new aliases should not register new users.
                 try:
-                    user = User.objects.get(**{self.alias_field_name+'__iexact': alias})
+                    user = User.objects.get(
+                        **{self.alias_field_name + '__iexact': alias}
+                    )
                 except User.DoesNotExist:
                     user = None
 
             if user:
                 if not user.is_active:
-                    # If valid, return attrs so we can create a token in our logic controller
+                    # If valid, return attrs,
+                    # so we can create a token in our logic controller.
                     msg = _('User account is disabled.')
                     raise serializers.ValidationError(msg)
             else:
@@ -113,6 +119,7 @@ class AbstractBaseAliasVerificationSerializer(serializers.Serializer):
     Abstract class that returns a callback token based on the field given
     Returns a token if valid, None or a message if not.
     """
+
     @property
     def alias_type(self):
         # The alias type, either email or mobile
@@ -136,7 +143,8 @@ class AbstractBaseAliasVerificationSerializer(serializers.Serializer):
                 user = request.user
                 if user:
                     if not user.is_active:
-                        # If valid, return attrs so we can create a token in our logic controller
+                        # If valid, return attrs,
+                        # so we can create a token in our logic controller
                         msg = _('User account is disabled.')
 
                     else:
@@ -145,7 +153,9 @@ class AbstractBaseAliasVerificationSerializer(serializers.Serializer):
                             attrs['user'] = user
                             return attrs
                         else:
-                            msg = _('This user doesn\'t have an %s.' % self.alias_field_name)
+                            msg = _(
+                                'This user doesn\'t have an %s.' % self.alias_field_name
+                            )
             raise serializers.ValidationError(msg)
         else:
             msg = _('Missing %s.') % self.alias_type
@@ -171,6 +181,7 @@ class MobileVerificationSerializer(AbstractBaseAliasVerificationSerializer):
     def alias_field_name(self):
         return api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME
 
+
 """
 Callback Token
 """
@@ -182,6 +193,8 @@ def token_age_validator(value):
     Makes sure a token is within the proper expiration datetime window.
     """
     if api_settings.PASSWORDLESS_TEST_MODE:
+        if int(value) in api_settings.PASSWORDLESS_TEST_CODE_INCORRECT:
+            return False
         return True
     valid_token = validate_token_age(value)
     if not valid_token:
@@ -198,9 +211,18 @@ class AbstractBaseCallbackTokenSerializer(serializers.Serializer):
                                  message="Mobile number must be entered in the format:"
                                          " '+999999999'. Up to 15 digits allowed.")
 
-    email = serializers.EmailField(required=False)  # Needs to be required=false to require both.
-    mobile = serializers.CharField(required=False, validators=[phone_regex], max_length=17)
-    token = TokenField(min_length=6, max_length=6, validators=[token_age_validator])
+    # Needs to be required=false to require both.
+    email = serializers.EmailField(required=False)
+    mobile = serializers.CharField(
+        required=False,
+        validators=[phone_regex],
+        max_length=17
+    )
+    token = TokenField(
+        min_length=TOKEN_LENGTH,
+        max_length=TOKEN_LENGTH,
+        validators=[token_age_validator]
+    )
 
     def validate_alias(self, attrs):
         email = attrs.get('email', None)
@@ -227,9 +249,12 @@ class CallbackTokenAuthSerializer(AbstractBaseCallbackTokenSerializer):
         try:
             alias_type, alias = self.validate_alias(attrs)
             callback_token = attrs.get('token', None)
-            user = User.objects.get(**{alias_type+'__iexact': alias})
-            # TODO: Try to choose valid token, before creating fake one
+            user = User.objects.get(**{alias_type + '__iexact': alias})
+
             if api_settings.PASSWORDLESS_TEST_MODE:
+                if int(callback_token) in api_settings.PASSWORDLESS_TEST_CODE_INCORRECT:
+                    raise serializers.ValidationError("Incorrect token from settings")
+
                 token = CallbackToken(**{
                     'user': user,
                     'key': callback_token,
@@ -258,8 +283,10 @@ class CallbackTokenAuthSerializer(AbstractBaseCallbackTokenSerializer):
                     msg = _('User account is disabled.')
                     raise serializers.ValidationError(msg)
 
-                if api_settings.PASSWORDLESS_USER_MARK_EMAIL_VERIFIED \
-                        or api_settings.PASSWORDLESS_USER_MARK_MOBILE_VERIFIED:
+                if (
+                    api_settings.PASSWORDLESS_USER_MARK_EMAIL_VERIFIED or
+                    api_settings.PASSWORDLESS_USER_MARK_MOBILE_VERIFIED
+                ):
                     # Mark this alias as verified
                     user = User.objects.get(pk=token.user.pk)
                     success = verify_user_alias(user, token)
@@ -295,10 +322,13 @@ class CallbackTokenVerificationSerializer(AbstractBaseCallbackTokenSerializer):
         try:
             alias_type, alias = self.validate_alias(attrs)
             user_id = self.context.get("user_id")
-            user = User.objects.get(**{'id': user_id, alias_type+'__iexact': alias})
+            user = User.objects.get(**{'id': user_id, alias_type + '__iexact': alias})
             callback_token = attrs.get('token', None)
-            # TODO: Try to choose valid token, before creating fake one
+
             if api_settings.PASSWORDLESS_TEST_MODE:
+                if int(callback_token) in api_settings.PASSWORDLESS_TEST_CODE_INCORRECT:
+                    raise serializers.ValidationError("Incorrect token from settings")
+
                 token = CallbackToken(**{
                     'user': user,
                     'key': callback_token,
@@ -330,7 +360,8 @@ class CallbackTokenVerificationSerializer(AbstractBaseCallbackTokenSerializer):
                 return attrs
             else:
                 msg = _('This token is invalid. Try again later.')
-                logger.debug("drfpasswordless: User token mismatch when verifying alias.")
+                logger.debug(
+                    "drfpasswordless: User token mismatch when verifying alias.")
 
         except CallbackToken.DoesNotExist:
             msg = _('We could not verify this alias.')
@@ -359,5 +390,3 @@ class TokenResponseSerializer(serializers.Serializer):
     """
     token = serializers.CharField(source='key')
     key = serializers.CharField(write_only=True)
-
-

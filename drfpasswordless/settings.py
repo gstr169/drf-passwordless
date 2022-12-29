@@ -93,6 +93,12 @@ DEFAULTS = {
 
     # Testing mode (every token applicable)
     'PASSWORDLESS_TEST_MODE': False,
+
+    # List with incorrect codes (integer, please) for the test mode.
+    'PASSWORDLESS_TEST_CODE_INCORRECT': [],
+
+    # Configurable token length.
+    'PASSWORDLESS_CALLBACK_TOKEN_LENGTH': 6,
 }
 
 # List of settings that may be in string import notation.

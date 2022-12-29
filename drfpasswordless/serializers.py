@@ -84,6 +84,7 @@ class AbstractBaseAliasAuthenticationSerializer(serializers.Serializer):
 
 class EmailAuthSerializer(AbstractBaseAliasAuthenticationSerializer):
     email = serializers.EmailField()
+
     @property
     def alias_type(self):
         return 'email'

@@ -73,7 +73,12 @@ class CallbackToken(AbstractBaseCallbackToken):
     """
     TOKEN_TYPE_AUTH = 'AUTH'
     TOKEN_TYPE_VERIFY = 'VERIFY'
-    TOKEN_TYPES = ((TOKEN_TYPE_AUTH, 'Auth'), (TOKEN_TYPE_VERIFY, 'Verify'))
+    TOKEN_TYPE_CHANGE = 'CHANGE'
+    TOKEN_TYPES = (
+        (TOKEN_TYPE_AUTH, 'Auth'),
+        (TOKEN_TYPE_VERIFY, 'Verify'),
+        (TOKEN_TYPE_CHANGE, 'Change'),
+    )
 
     # key = models.CharField(default=generate_numeric_token, max_length=6)
     key = models.TextField(default=generate_numeric_token)

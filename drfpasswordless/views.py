@@ -145,7 +145,48 @@ class ObtainMobileVerificationCallbackToken(AbstractBaseObtainCallbackToken):
     alias_type = 'mobile'
     token_type = CallbackToken.TOKEN_TYPE_VERIFY
 
-    mobile_message = api_settings.PASSWORDLESS_MOBILE_MESSAGE
+    mobile_message = api_settings.PASSWORDLESS_MOBILE_VERIFICATION_MESSAGE
+    message_payload = {'mobile_message': mobile_message}
+
+class ObtainEmailChangeCallbackToken(AbstractBaseObtainCallbackToken):
+    """
+    Send token to user by e-mail for changing.
+
+    This returns a 6-digit callback token we can trade for a user's Auth Token.
+    """
+    permission_classes = (IsAuthenticated,)
+    serializer_class = EmailChangingSerializer
+    success_response = "A verification token has been sent to your email."
+    failure_response = "Unable to email you a verification code. Try again later."
+
+    alias_type = 'email'
+    token_type = CallbackToken.TOKEN_TYPE_CHANGE
+
+    email_subject = api_settings.PASSWORDLESS_EMAIL_VERIFICATION_SUBJECT
+    email_plaintext = api_settings.PASSWORDLESS_EMAIL_VERIFICATION_PLAINTEXT_MESSAGE
+    email_html = api_settings.PASSWORDLESS_EMAIL_VERIFICATION_TOKEN_HTML_TEMPLATE_NAME
+    message_payload = {
+        'email_subject': email_subject,
+        'email_plaintext': email_plaintext,
+        'email_html': email_html
+    }
+
+
+class ObtainMobileChangeCallbackToken(AbstractBaseObtainCallbackToken):
+    """
+    Send token to user by SMS for verification.
+
+    This returns a 6-digit callback token we can trade for a user's Auth Token.
+    """
+    permission_classes = (IsAuthenticated,)
+    serializer_class = MobileChangingSerializer
+    success_response = "We texted you a verification code."
+    failure_response = "Unable to send you a verification code. Try again later."
+
+    alias_type = 'mobile'
+    token_type = CallbackToken.TOKEN_TYPE_CHANGE
+
+    mobile_message = api_settings.PASSWORDLESS_MOBILE_CHANGE_MESSAGE
     message_payload = {'mobile_message': mobile_message}
 
 

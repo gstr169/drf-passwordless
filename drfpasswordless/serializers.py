@@ -232,10 +232,10 @@ class AbstractBaseAliasChangeSerializer(serializers.Serializer):
                         # Has the appropriate alias type
                         if hasattr(user, self.alias_field_name):
                             # Check, isn't alias the same.
-                            alias = attrs.get(self.alias_type)
+                            alias = request.get(self.alias_type)
                             if getattr(user, self.alias_field_name) == alias:
                                 msg = _(
-                                    f'This user already have this {self.alias_type}.'
+                                    f'This user already have same {self.alias_type}.'
                                 )
                             else:
                                 attrs['user'] = user

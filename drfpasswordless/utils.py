@@ -143,14 +143,20 @@ def change_user_alias(user, token, old_users):
             api_settings.PASSWORDLESS_USER_EMAIL_FIELD_NAME,
             token.to_alias,
         )
-        old_users.update(**{api_settings.PASSWORDLESS_USER_EMAIL_FIELD_NAME: ""})
+        old_users.update(**{
+            api_settings.PASSWORDLESS_USER_EMAIL_FIELD_NAME: "",
+            api_settings.PASSWORDLESS_USER_EMAIL_VERIFIED_FIELD_NAME: False,
+        })
     elif token.to_alias_type == 'MOBILE':
         setattr(
             user,
             api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME,
             token.to_alias,
         )
-        old_users.update(**{api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME: ""})
+        old_users.update(**{
+            api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME: "",
+            api_settings.PASSWORDLESS_USER_MOBILE_VERIFIED_FIELD_NAME: False,
+        })
     else:
         return False
     user.save()

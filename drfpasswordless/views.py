@@ -68,6 +68,11 @@ class AbstractBaseObtainCallbackToken(APIView):
 
 
 class ObtainEmailCallbackToken(AbstractBaseObtainCallbackToken):
+    """
+    Send token to user by e-mail.
+
+    This returns a 6-digit callback token we can trade for a user's Auth Token.
+    """
     permission_classes = (AllowAny,)
     serializer_class = EmailAuthSerializer
     success_response = "A login token has been sent to your email."
@@ -85,6 +90,11 @@ class ObtainEmailCallbackToken(AbstractBaseObtainCallbackToken):
 
 
 class ObtainMobileCallbackToken(AbstractBaseObtainCallbackToken):
+    """
+    Send token to user by SMS.
+
+    This returns a 6-digit callback token we can trade for a user's Auth Token.
+    """
     permission_classes = (AllowAny,)
     serializer_class = MobileAuthSerializer
     success_response = "We texted you a login code."
@@ -98,6 +108,11 @@ class ObtainMobileCallbackToken(AbstractBaseObtainCallbackToken):
 
 
 class ObtainEmailVerificationCallbackToken(AbstractBaseObtainCallbackToken):
+    """
+    Send token to user by e-mail for verification.
+
+    This returns a 6-digit callback token we can trade for a user's Auth Token.
+    """
     permission_classes = (IsAuthenticated,)
     serializer_class = EmailVerificationSerializer
     success_response = "A verification token has been sent to your email."
@@ -117,6 +132,11 @@ class ObtainEmailVerificationCallbackToken(AbstractBaseObtainCallbackToken):
 
 
 class ObtainMobileVerificationCallbackToken(AbstractBaseObtainCallbackToken):
+    """
+    Send token to user by SMS for verification.
+
+    This returns a 6-digit callback token we can trade for a user's Auth Token.
+    """
     permission_classes = (IsAuthenticated,)
     serializer_class = MobileVerificationSerializer
     success_response = "We texted you a verification code."
@@ -156,6 +176,9 @@ class AbstractBaseObtainAuthToken(APIView):
 
 class ObtainAuthTokenFromCallbackToken(AbstractBaseObtainAuthToken):
     """
+    Verify token received from user for login/registration purpose.
+
+    Returns Auth Token.
     This is a duplicate of rest_framework's own ObtainAuthToken method.
     Instead, this returns an Auth Token based on our callback token and source.
     """
@@ -165,6 +188,8 @@ class ObtainAuthTokenFromCallbackToken(AbstractBaseObtainAuthToken):
 
 class VerifyAliasFromCallbackToken(APIView):
     """
+    Verify token received from user for verification purpose.
+
     This verifies an alias on correct callback token entry using the same logic as auth.
     Should be refactored at some point.
     """

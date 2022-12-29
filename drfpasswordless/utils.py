@@ -172,7 +172,7 @@ def inject_template_context(context):
     return context
 
 
-def send_email_with_callback_token(user, email_token, **kwargs):
+def send_email_with_callback_token(user, to_email, email_token, **kwargs):
     """
     Sends an Email to user.email.
 
@@ -204,7 +204,7 @@ def send_email_with_callback_token(user, email_token, **kwargs):
                 email_subject,
                 email_plaintext % email_token.key,
                 api_settings.PASSWORDLESS_EMAIL_NOREPLY_ADDRESS,
-                [getattr(user, api_settings.PASSWORDLESS_USER_EMAIL_FIELD_NAME)],
+                [to_email],
                 fail_silently=False,
                 html_message=html_message,
             )

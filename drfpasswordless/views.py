@@ -89,6 +89,8 @@ class ObtainEmailCallbackToken(AbstractBaseObtainCallbackToken):
     """
     Send token to user by e-mail.
 
+    Receive: email
+    Response: message or detail
     This returns a 6-digit callback token we can trade for a user's Auth Token.
     """
     permission_classes = (AllowAny,)
@@ -111,6 +113,8 @@ class ObtainMobileCallbackToken(AbstractBaseObtainCallbackToken):
     """
     Send token to user by SMS.
 
+    Receive: mobile
+    Response: message or detail
     This returns a 6-digit callback token we can trade for a user's Auth Token.
     """
     permission_classes = (AllowAny,)
@@ -134,6 +138,8 @@ class ObtainEmailVerificationCallbackToken(AbstractBaseObtainCallbackToken):
     """
     Send token to user by e-mail for verification.
 
+    Receive: Nothing
+    Response: message or detail
     This returns a 6-digit callback token we can trade for a user's Auth Token.
     """
     permission_classes = (IsAuthenticated,)
@@ -158,6 +164,8 @@ class ObtainMobileVerificationCallbackToken(AbstractBaseObtainCallbackToken):
     """
     Send token to user by SMS for verification.
 
+    Receive: Nothing
+    Response: message or detail
     This returns a 6-digit callback token we can trade for a user's Auth Token.
     """
     permission_classes = (IsAuthenticated,)
@@ -181,6 +189,8 @@ class ObtainEmailChangeCallbackToken(AbstractBaseObtainCallbackToken):
     """
     Send token to user by e-mail for changing.
 
+    Receive: email
+    Response: message or detail
     This returns a 6-digit callback token we can trade for a user's Auth Token.
     """
     permission_classes = (IsAuthenticated,)
@@ -203,8 +213,10 @@ class ObtainEmailChangeCallbackToken(AbstractBaseObtainCallbackToken):
 
 class ObtainMobileChangeCallbackToken(AbstractBaseObtainCallbackToken):
     """
-    Send token to user by SMS for verification.
+    Send token to user by SMS for changing.
 
+    Receive: mobile
+    Response: message or detail
     This returns a 6-digit callback token we can trade for a user's Auth Token.
     """
     permission_classes = (IsAuthenticated,)
@@ -257,7 +269,8 @@ class ObtainAuthTokenFromCallbackToken(AbstractBaseObtainAuthToken):
     """
     Verify token received from user for login/registration purpose.
 
-    Returns Auth Token.
+    Receive: email or mobile, token
+    Response: token
     This is a duplicate of rest_framework's own ObtainAuthToken method.
     Instead, this returns an Auth Token based on our callback token and source.
     """
@@ -269,6 +282,8 @@ class VerifyAliasFromCallbackToken(APIView):
     """
     Verify token received from user and verify alias.
 
+    Receive: email or mobile, token
+    Response: message
     This verifies an alias on correct callback token entry using the same logic as auth.
     Should be refactored at some point.
     """
@@ -292,6 +307,8 @@ class ChangeAliasFromCallbackToken(APIView):
     """
     Verify token received from user and change alias.
 
+    Receive: email or mobile, token
+    Response: message
     This verifies an alias on correct callback token entry using the same logic as auth.
     Should be refactored at some point.
     """
@@ -303,11 +320,11 @@ class ChangeAliasFromCallbackToken(APIView):
             context={'user_id': self.request.user.id}
         )
         if serializer.is_valid(raise_exception=True):
-            return Response({'detail': 'Alias verified.'}, status=status.HTTP_200_OK)
+            return Response({'detail': 'Alias changed.'}, status=status.HTTP_200_OK)
         else:
             logger.error(
-                "Couldn't verify unknown user. Errors on serializer: {}".format(
+                "Couldn't change unknown user. Errors on serializer: {}".format(
                     serializer.error_messages))
 
-        return Response({'detail': 'We couldn\'t verify this alias. Try again later.'},
+        return Response({'detail': 'We couldn\'t change this alias. Try again later.'},
                         status.HTTP_400_BAD_REQUEST)

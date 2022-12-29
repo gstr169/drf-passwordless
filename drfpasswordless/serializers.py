@@ -104,6 +104,11 @@ class EmailAuthSerializer(AbstractBaseAliasAuthenticationSerializer):
 
 
 class MobileAuthSerializer(AbstractBaseAliasAuthenticationSerializer):
+    phone_regex = RegexValidator(regex=r'^\+[1-9]\d{1,14}$',
+                                 message="Mobile number must be entered in the format:"
+                                         " '+999999999'. Up to 15 digits allowed.")
+    mobile = serializers.CharField(validators=[phone_regex], max_length=17)
+
     @property
     def alias_type(self):
         return 'mobile'
@@ -111,11 +116,6 @@ class MobileAuthSerializer(AbstractBaseAliasAuthenticationSerializer):
     @property
     def alias_field_name(self):
         return api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME
-
-    phone_regex = RegexValidator(regex=r'^\+[1-9]\d{1,14}$',
-                                 message="Mobile number must be entered in the format:"
-                                         " '+999999999'. Up to 15 digits allowed.")
-    mobile = serializers.CharField(validators=[phone_regex], max_length=17)
 
 
 """
@@ -251,6 +251,8 @@ class AbstractBaseAliasChangeSerializer(serializers.Serializer):
 
 
 class EmailChangeSerializer(AbstractBaseAliasVerificationSerializer):
+    email = serializers.EmailField()
+
     @property
     def alias_type(self):
         return 'email'
@@ -261,6 +263,11 @@ class EmailChangeSerializer(AbstractBaseAliasVerificationSerializer):
 
 
 class MobileChangeSerializer(AbstractBaseAliasVerificationSerializer):
+    phone_regex = RegexValidator(regex=r'^\+[1-9]\d{1,14}$',
+                                 message="Mobile number must be entered in the format:"
+                                         " '+999999999'. Up to 15 digits allowed.")
+    mobile = serializers.CharField(validators=[phone_regex], max_length=17)
+
     @property
     def alias_type(self):
         return 'mobile'

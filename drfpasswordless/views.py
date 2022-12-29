@@ -1,6 +1,6 @@
 import logging
 from django.utils.module_loading import import_string
-from rest_framework import parsers, renderers, status
+from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView

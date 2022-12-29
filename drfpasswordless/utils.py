@@ -133,7 +133,7 @@ def verify_user_alias(user, token):
     return True
 
 
-def change_user_alias(user, token):
+def change_user_alias(user, token, old_users):
     """
     Change a user's contact point depending on accepted token type.
     """
@@ -143,12 +143,14 @@ def change_user_alias(user, token):
             api_settings.PASSWORDLESS_USER_EMAIL_FIELD_NAME,
             token.to_alias,
         )
+        old_users.update(**{api_settings.PASSWORDLESS_USER_EMAIL_FIELD_NAME: ""})
     elif token.to_alias_type == 'MOBILE':
         setattr(
             user,
             api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME,
             token.to_alias,
         )
+        old_users.update(**{api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME: ""})
     else:
         return False
     user.save()

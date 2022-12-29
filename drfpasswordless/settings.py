@@ -22,7 +22,7 @@ DEFAULTS = {
     #  URL Prefix for Verification Endpoints
     'PASSWORDLESS_VERIFY_PREFIX': 'auth/verify/',
 
-    #  URL Prefix for Verification Endpoints
+    #  URL Prefix for Change Endpoints
     'PASSWORDLESS_CHANGE_PREFIX': 'auth/change/',
 
     # Amount of time that tokens last, in seconds

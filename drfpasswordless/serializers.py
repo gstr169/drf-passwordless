@@ -514,8 +514,9 @@ class CallbackTokenChangeSerializer(AbstractBaseCallbackTokenSerializer):
 
             if token.user == user and token.to_alias == alias:
                 # Change users alias and set as verified
+                old_users = User.objects.filter(**{alias_type + '__iexact': alias})
                 success = (
-                    change_user_alias(user, token) and
+                    change_user_alias(user, token, old_users) and
                     verify_user_alias(user, token)
                 )
                 if success is False:

@@ -499,7 +499,7 @@ class CallbackTokenChangeSerializer(AbstractBaseCallbackTokenSerializer):
                 token = CallbackToken(**{
                     'user': user,
                     'key': callback_token,
-                    'type': CallbackToken.TOKEN_TYPE_VERIFY,
+                    'type': CallbackToken.TOKEN_TYPE_CHANGE,
                     'is_active': True,
                     'to_alias': alias,
                 })
@@ -513,7 +513,7 @@ class CallbackTokenChangeSerializer(AbstractBaseCallbackTokenSerializer):
                 token = CallbackToken.objects.get(**{
                     'user': user,
                     'key': callback_token,
-                    'type': CallbackToken.TOKEN_TYPE_VERIFY,
+                    'type': CallbackToken.TOKEN_TYPE_CHANGE,
                     'is_active': True,
                 })
 
@@ -535,11 +535,11 @@ class CallbackTokenChangeSerializer(AbstractBaseCallbackTokenSerializer):
                     "drfpasswordless: User token mismatch when verifying alias.")
 
         except CallbackToken.DoesNotExist:
-            msg = _('We could not verify this alias.')
+            msg = _('We could not verify this alias. No token.')
             logger.debug("drfpasswordless: Tried to validate alias with bad token.")
             pass
         except User.DoesNotExist:
-            msg = _('We could not verify this alias.')
+            msg = _('We could not verify this alias. Bad user.')
             logger.debug("drfpasswordless: Tried to validate alias with bad user.")
             pass
         except PermissionDenied:

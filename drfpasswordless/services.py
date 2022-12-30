@@ -8,7 +8,7 @@ from drfpasswordless.utils import (
 class TokenService(object):
     @staticmethod
     def send_token(user, alias_type, token_type, to_alias=None, **message_payload):
-        token = create_callback_token_for_user(user, alias_type, token_type)
+        token = create_callback_token_for_user(user, alias_type, token_type, to_alias)
         send_action = None
 
         if user.pk in api_settings.PASSWORDLESS_DEMO_USERS.keys():

@@ -46,7 +46,7 @@ def authenticate_by_token(callback_token):
     return None
 
 
-def create_callback_token_for_user(user, alias_type, token_type):
+def create_callback_token_for_user(user, alias_type, token_type, alias=None):
     token = None
     alias_type_u = alias_type.upper()
     to_alias_field = getattr(
@@ -66,10 +66,12 @@ def create_callback_token_for_user(user, alias_type, token_type):
                 type=token_type
             )
 
+    if not alias:
+        alias = getattr(user, to_alias_field)
     token = CallbackToken.objects.create(
         user=user,
         to_alias_type=alias_type_u,
-        to_alias=getattr(user, to_alias_field),
+        to_alias=alias,
         type=token_type
     )
 

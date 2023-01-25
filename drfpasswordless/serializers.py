@@ -117,6 +117,17 @@ class MobileAuthSerializer(AbstractBaseAliasAuthenticationSerializer):
     def alias_field_name(self):
         return api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME
 
+    def validate(self, attrs):
+        if not api_settings.PASSWORDLESS_MOBILE_NUMBER_STANDARDISE:
+            return super().validate(attrs)
+
+        mobile = str(attrs['mobile'])
+        mobile = ''.join(mobile.split())
+        mobile = '+' + mobile if mobile[0] != '+' else mobile
+
+        attrs['mobile'] = mobile
+        return super().validate(attrs)
+
 
 """
 Verification
@@ -276,6 +287,17 @@ class MobileChangeSerializer(AbstractBaseAliasVerificationSerializer):
     def alias_field_name(self):
         return api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME
 
+    def validate(self, attrs):
+        if not api_settings.PASSWORDLESS_MOBILE_NUMBER_STANDARDISE:
+            return super().validate(attrs)
+
+        mobile = str(attrs['mobile'])
+        mobile = ''.join(mobile.split())
+        mobile = '+' + mobile if mobile[0] != '+' else mobile
+
+        attrs['mobile'] = mobile
+        return super().validate(attrs)
+
 
 """
 Callback Token
@@ -336,12 +358,30 @@ class AbstractBaseCallbackTokenSerializer(serializers.Serializer):
 
         return None
 
+    def validate(self, attrs):
+        if not api_settings.PASSWORDLESS_MOBILE_NUMBER_STANDARDISE:
+            return attrs
+
+        if not attrs.get('mobile', None):
+            return attrs
+
+        mobile = str(attrs['mobile'])
+        mobile = ''.join(mobile.split())
+        mobile = ''.join(mobile.split('-'))
+        mobile = ''.join(mobile.split('('))
+        mobile = ''.join(mobile.split(')'))
+        mobile = '+' + mobile if mobile[0] != '+' else mobile
+
+        attrs['mobile'] = mobile
+        return attrs
+
 
 class CallbackTokenAuthSerializer(AbstractBaseCallbackTokenSerializer):
 
     def validate(self, attrs):
         # Check Aliases
         try:
+            super().validate(attrs)
             alias_type, alias = self.validate_alias(attrs)
             callback_token = attrs.get('token', None)
             user = User.objects.get(**{alias_type + '__iexact': alias})

@@ -59,6 +59,9 @@ DEFAULTS = {
     # Context Processors for Email Template
     'PASSWORDLESS_CONTEXT_PROCESSORS': [],
 
+    # Standardise mobile number before validation
+    'PASSWORDLESS_MOBILE_NUMBER_STANDARDISE': False,
+
     # --- MESSAGES SECTION --- #
 
     # LOGIN MESSAGES

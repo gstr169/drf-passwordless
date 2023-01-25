@@ -18,6 +18,17 @@ User = get_user_model()
 TOKEN_LENGTH = api_settings.PASSWORDLESS_CALLBACK_TOKEN_LENGTH
 
 
+def clear_mobile_number(mobile):
+    mobile = str(mobile)
+    mobile = ''.join(mobile.split())
+    mobile = ''.join(mobile.split('-'))
+    mobile = ''.join(mobile.split('('))
+    mobile = ''.join(mobile.split(')'))
+    mobile = '+' + mobile if mobile[0] != '+' else mobile
+
+    return mobile
+
+
 class TokenField(serializers.CharField):
     default_error_messages = {
         'required': _('Token required'),
@@ -104,10 +115,7 @@ class EmailAuthSerializer(AbstractBaseAliasAuthenticationSerializer):
 
 
 class MobileAuthSerializer(AbstractBaseAliasAuthenticationSerializer):
-    phone_regex = RegexValidator(regex=r'^\+[1-9]\d{1,14}$',
-                                 message="Mobile number must be entered in the format:"
-                                         " '+999999999'. Up to 15 digits allowed.")
-    mobile = serializers.CharField(validators=[phone_regex], max_length=17)
+    mobile = serializers.CharField(max_length=17)
 
     @property
     def alias_type(self):
@@ -118,14 +126,16 @@ class MobileAuthSerializer(AbstractBaseAliasAuthenticationSerializer):
         return api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME
 
     def validate(self, attrs):
-        if not api_settings.PASSWORDLESS_MOBILE_NUMBER_STANDARDISE:
-            return super().validate(attrs)
+        if api_settings.PASSWORDLESS_MOBILE_NUMBER_STANDARDISE:
+            attrs['mobile'] = clear_mobile_number(attrs['mobile'])
 
-        mobile = str(attrs['mobile'])
-        mobile = ''.join(mobile.split())
-        mobile = '+' + mobile if mobile[0] != '+' else mobile
+        phone_regex = RegexValidator(
+            regex=r'^\+[1-9]\d{1,14}$',
+            message="Mobile number must be entered in the format:"
+                    " '+999999999'. Up to 15 digits allowed."
+        )
+        phone_regex(attrs['mobile'])
 
-        attrs['mobile'] = mobile
         return super().validate(attrs)
 
 
@@ -274,10 +284,7 @@ class EmailChangeSerializer(AbstractBaseAliasVerificationSerializer):
 
 
 class MobileChangeSerializer(AbstractBaseAliasVerificationSerializer):
-    phone_regex = RegexValidator(regex=r'^\+[1-9]\d{1,14}$',
-                                 message="Mobile number must be entered in the format:"
-                                         " '+999999999'. Up to 15 digits allowed.")
-    mobile = serializers.CharField(validators=[phone_regex], max_length=17)
+    mobile = serializers.CharField(max_length=17)
 
     @property
     def alias_type(self):
@@ -288,14 +295,15 @@ class MobileChangeSerializer(AbstractBaseAliasVerificationSerializer):
         return api_settings.PASSWORDLESS_USER_MOBILE_FIELD_NAME
 
     def validate(self, attrs):
-        if not api_settings.PASSWORDLESS_MOBILE_NUMBER_STANDARDISE:
-            return super().validate(attrs)
+        if api_settings.PASSWORDLESS_MOBILE_NUMBER_STANDARDISE:
+            attrs['mobile'] = clear_mobile_number(attrs['mobile'])
 
-        mobile = str(attrs['mobile'])
-        mobile = ''.join(mobile.split())
-        mobile = '+' + mobile if mobile[0] != '+' else mobile
-
-        attrs['mobile'] = mobile
+        phone_regex = RegexValidator(
+            regex=r'^\+[1-9]\d{1,14}$',
+            message="Mobile number must be entered in the format:"
+                    " '+999999999'. Up to 15 digits allowed."
+        )
+        phone_regex(attrs['mobile'])
         return super().validate(attrs)
 
 
@@ -324,15 +332,10 @@ class AbstractBaseCallbackTokenSerializer(serializers.Serializer):
     Abstract class inspired by DRF's own token serializer.
     Returns a user if valid, None or a message if not.
     """
-    phone_regex = RegexValidator(regex=r'^\+[1-9]\d{1,14}$',
-                                 message="Mobile number must be entered in the format:"
-                                         " '+999999999'. Up to 15 digits allowed.")
-
     # Needs to be required=false to require both.
     email = serializers.EmailField(required=False)
     mobile = serializers.CharField(
         required=False,
-        validators=[phone_regex],
         max_length=17
     )
     token = TokenField(
@@ -359,20 +362,18 @@ class AbstractBaseCallbackTokenSerializer(serializers.Serializer):
         return None
 
     def validate(self, attrs):
-        if not api_settings.PASSWORDLESS_MOBILE_NUMBER_STANDARDISE:
-            return attrs
-
         if not attrs.get('mobile', None):
             return attrs
 
-        mobile = str(attrs['mobile'])
-        mobile = ''.join(mobile.split())
-        mobile = ''.join(mobile.split('-'))
-        mobile = ''.join(mobile.split('('))
-        mobile = ''.join(mobile.split(')'))
-        mobile = '+' + mobile if mobile[0] != '+' else mobile
+        if api_settings.PASSWORDLESS_MOBILE_NUMBER_STANDARDISE:
+            attrs['mobile'] = clear_mobile_number(attrs['mobile'])
 
-        attrs['mobile'] = mobile
+        phone_regex = RegexValidator(
+            regex=r'^\+[1-9]\d{1,14}$',
+            message="Mobile number must be entered in the format:"
+                    " '+999999999'. Up to 15 digits allowed."
+        )
+        phone_regex(attrs['mobile'])
         return attrs
 
 
@@ -455,6 +456,7 @@ class CallbackTokenVerificationSerializer(AbstractBaseCallbackTokenSerializer):
 
     def validate(self, attrs):
         try:
+            super().validate(attrs)
             alias_type, alias = self.validate_alias(attrs)
             user_id = self.context.get("user_id")
             user = User.objects.get(**{'id': user_id, alias_type + '__iexact': alias})
@@ -522,6 +524,7 @@ class CallbackTokenChangeSerializer(AbstractBaseCallbackTokenSerializer):
 
     def validate(self, attrs):
         try:
+            super().validate(attrs)
             alias_type, alias = self.validate_alias(attrs)
             user_id = self.context.get('user_id', None)
             user = User.objects.get(**{'id': user_id})

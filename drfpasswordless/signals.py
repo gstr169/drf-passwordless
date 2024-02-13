@@ -1,5 +1,4 @@
 import logging
-from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.dispatch import receiver
 from django.db.models import signals
@@ -64,7 +63,7 @@ def check_unique_tokens(sender, instance, **kwargs):
         pass
 
 
-User = get_user_model()
+User = api_settings.PASSWORDLESS_USER_MODEL
 
 
 @receiver(signals.pre_save, sender=User)

@@ -1,6 +1,5 @@
 import logging
 import os
-from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
 from django.template import loader
@@ -11,7 +10,7 @@ from drfpasswordless.settings import api_settings
 
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
+User = api_settings.PASSWORDLESS_USER_MODEL
 TOKEN_LENGTH = api_settings.PASSWORDLESS_CALLBACK_TOKEN_LENGTH
 
 

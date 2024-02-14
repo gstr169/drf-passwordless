@@ -5,7 +5,8 @@ from django.db.models import signals
 from drfpasswordless.models import CallbackToken
 from drfpasswordless.models import generate_numeric_token
 from drfpasswordless.settings import api_settings
-from drfpasswordless.services import TokenService, get_custom_user_model
+from drfpasswordless.services import TokenService
+from drfpasswordless.utils import get_custom_user_model
 
 logger = logging.getLogger(__name__)
 

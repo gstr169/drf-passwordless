@@ -7,13 +7,24 @@ from django.utils import timezone
 from rest_framework.authtoken.models import Token
 from drfpasswordless.models import CallbackToken
 from drfpasswordless.settings import api_settings
-from drfpasswordless.services import get_custom_user_model
 
 
 logger = logging.getLogger(__name__)
-User = get_custom_user_model()
+
 TOKEN_LENGTH = api_settings.PASSWORDLESS_CALLBACK_TOKEN_LENGTH
 
+
+def get_custom_user_model():
+    """
+    Return custom user model from PASSWORDLESS_USER_MODEL in settings,
+    else return default user model
+    """
+    if api_settings.PASSWORDLESS_USER_MODEL:
+        return api_settings.PASSWORDLESS_USER_MODEL
+    else:
+        return get_user_model()
+
+User = get_custom_user_model()
 
 def authenticate_by_token(callback_token):
     try:

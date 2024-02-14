@@ -3,8 +3,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.test import APITestCase
 from django.urls import reverse
 from drfpasswordless.settings import api_settings, DEFAULTS
-from drfpasswordless.utils import CallbackToken
-from drfpasswordless.services import get_custom_user_model
+from drfpasswordless.utils import CallbackToken, get_custom_user_model
 
 User = get_custom_user_model()
 

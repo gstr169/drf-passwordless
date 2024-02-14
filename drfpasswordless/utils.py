@@ -1,7 +1,8 @@
 import logging
 import os
+from django.apps import apps as django_apps
 from django.contrib.auth import get_user_model
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ImproperlyConfigured, PermissionDenied
 from django.core.mail import send_mail
 from django.template import loader
 from django.utils import timezone

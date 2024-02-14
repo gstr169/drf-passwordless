@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.contrib.auth import get_user_model
 from rest_framework.settings import APISettings
 
 USER_SETTINGS = getattr(settings, 'PASSWORDLESS_AUTH', None)
@@ -15,7 +14,7 @@ DEFAULTS = {
     # --- GENERAL SETTINGS --- #
 
     # Allowed to choose custom user model
-    'PASSWORDLESS_USER_MODEL': get_user_model(),
+    'PASSWORDLESS_USER_MODEL': None,
     # Allowed auth types, can be EMAIL, MOBILE, or both.
     'PASSWORDLESS_AUTH_TYPES': ['EMAIL', 'MOBILE'],
 

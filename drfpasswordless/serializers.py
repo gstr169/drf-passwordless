@@ -6,6 +6,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from drfpasswordless.models import CallbackToken
 from drfpasswordless.settings import api_settings
+from drfpasswordless.services import get_custom_user_model
 from drfpasswordless.utils import (
     verify_user_alias,
     change_user_alias,
@@ -13,7 +14,7 @@ from drfpasswordless.utils import (
 )
 
 logger = logging.getLogger(__name__)
-User = api_settings.PASSWORDLESS_USER_MODEL
+User = get_custom_user_model()
 TOKEN_LENGTH = api_settings.PASSWORDLESS_CALLBACK_TOKEN_LENGTH
 
 

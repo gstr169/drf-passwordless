@@ -5,8 +5,9 @@ from rest_framework.test import APITestCase
 from django.urls import reverse
 from drfpasswordless.settings import api_settings, DEFAULTS
 from drfpasswordless.utils import CallbackToken
+from drfpasswordless.services import get_custom_user_model
 
-User = api_settings.PASSWORDLESS_USER_MODEL
+User = get_custom_user_model()
 
 
 class EmailSignUpCallbackTokenTests(APITestCase):

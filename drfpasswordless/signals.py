@@ -5,7 +5,7 @@ from django.db.models import signals
 from drfpasswordless.models import CallbackToken
 from drfpasswordless.models import generate_numeric_token
 from drfpasswordless.settings import api_settings
-from drfpasswordless.services import TokenService
+from drfpasswordless.services import TokenService, get_custom_user_model
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ def check_unique_tokens(sender, instance, **kwargs):
         pass
 
 
-User = api_settings.PASSWORDLESS_USER_MODEL
+User = get_custom_user_model()
 
 
 @receiver(signals.pre_save, sender=User)

@@ -30,3 +30,14 @@ class TokenService(object):
         # Send to alias
         success = send_action(user, to_alias, token, **message_payload)
         return success
+
+
+def get_custom_user_model():
+    """
+    Return custom user model from PASSWORDLESS_USER_MODEL in settings,
+    else return default user model
+    """
+    if api_settings.PASSWORDLESS_USER_MODEL:
+        return api_settings.PASSWORDLESS_USER_MODEL
+    else:
+        return get_user_model()

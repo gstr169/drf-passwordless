@@ -26,12 +26,12 @@ def get_custom_user_model():
             return django_apps.get_model(api_settings.PASSWORDLESS_USER_MODEL, require_ready=False)
         except ValueError:
             raise ImproperlyConfigured(
-                "AUTH_USER_MODEL must be of the form 'app_label.model_name'"
+                "PASSWORDLESS_USER_MODEL must be of the form 'app_label.model_name'"
             )
         except LookupError:
             raise ImproperlyConfigured(
-                "AUTH_USER_MODEL refers to model '%s' that has not been installed"
-                % settings.AUTH_USER_MODEL
+                "PASSWORDLESS_USER_MODEL refers to model '%s' that has not been installed"
+                % api_settings.PASSWORDLESS_USER_MODEL
             )
     else:
         return get_user_model()

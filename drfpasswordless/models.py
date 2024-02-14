@@ -6,6 +6,10 @@ from django.utils.crypto import get_random_string
 
 from drfpasswordless.settings import api_settings
 
+if api_settings.PASSWORDLESS_USER_MODEL:
+    USER_MODEL = api_settings.PASSWORDLESS_USER_MODEL
+else:
+    USER_MODEL = settings.AUTH_USER_MODEL
 
 def generate_hex_token():
     return uuid.uuid1().hex
@@ -48,7 +52,7 @@ class AbstractBaseCallbackToken(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        USER_MODEL,
         related_name=None,
         on_delete=models.CASCADE
     )

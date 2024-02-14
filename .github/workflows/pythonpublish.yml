@@ -5,10 +5,14 @@ on:
     types: [created]
 
 jobs:
-  deploy:
+  pypi-publish:
+    name: upload release to PyPI
     runs-on: ubuntu-latest
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
     steps:
-    - uses: actions/checkout@v1
+      # retrieve your distributions here
     - name: Set up Python
       uses: actions/setup-python@v1
       with:
@@ -17,10 +21,26 @@ jobs:
       run: |
         python3 -m pip install --upgrade pip
         python3 -m pip install setuptools wheel twine
-    - name: Build and publish
-      env:
-        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      run: |
-        python3 setup.py sdist bdist_wheel
-        twine upload dist/*
+    - name: Publish package distributions to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+
+  # deploy:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #   - uses: actions/checkout@v1
+  #   - name: Set up Python
+  #     uses: actions/setup-python@v1
+  #     with:
+  #       python-version: '3.x'
+  #   - name: Install dependencies
+  #     run: |
+  #       python3 -m pip install --upgrade pip
+  #       python3 -m pip install setuptools wheel twine
+  #   - name: Build and publish
+  #     env:
+  #       TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+  #       TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+  #     run: |
+  #       python3 setup.py sdist bdist_wheel
+  #       twine upload dist/*
+  

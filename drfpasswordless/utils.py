@@ -1,7 +1,8 @@
 import logging
 import os
+from django.apps import apps as django_apps
 from django.contrib.auth import get_user_model
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ImproperlyConfigured, PermissionDenied
 from django.core.mail import send_mail
 from django.template import loader
 from django.utils import timezone
@@ -11,9 +12,31 @@ from drfpasswordless.settings import api_settings
 
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
+
 TOKEN_LENGTH = api_settings.PASSWORDLESS_CALLBACK_TOKEN_LENGTH
 
+
+def get_custom_user_model():
+    """
+    Return custom user model from PASSWORDLESS_USER_MODEL in settings,
+    else return default user model
+    """
+    if api_settings.PASSWORDLESS_USER_MODEL:
+        try:
+            return django_apps.get_model(api_settings.PASSWORDLESS_USER_MODEL, require_ready=False)
+        except ValueError:
+            raise ImproperlyConfigured(
+                "PASSWORDLESS_USER_MODEL must be of the form 'app_label.model_name'"
+            )
+        except LookupError:
+            raise ImproperlyConfigured(
+                "PASSWORDLESS_USER_MODEL refers to model '%s' that has not been installed"
+                % api_settings.PASSWORDLESS_USER_MODEL
+            )
+    else:
+        return get_user_model()
+
+User = get_custom_user_model()
 
 def authenticate_by_token(callback_token):
     try:

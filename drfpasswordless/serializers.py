@@ -1,6 +1,5 @@
 import logging
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.core.validators import RegexValidator
 from rest_framework import serializers
@@ -11,10 +10,11 @@ from drfpasswordless.utils import (
     verify_user_alias,
     change_user_alias,
     validate_token_age,
+    get_custom_user_model,
 )
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
+User = get_custom_user_model()
 TOKEN_LENGTH = api_settings.PASSWORDLESS_CALLBACK_TOKEN_LENGTH
 
 
